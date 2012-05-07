@@ -1,0 +1,34 @@
+#!/usr/bin/perl -w
+
+use strict;
+use warnings;
+
+use AI::ExpertSystem::Simple::CheckEmail;
+use Getopt::Long;
+
+my $knowledgebase;
+my $directory;
+
+GetOptions( 'kb=s' => \$knowledgebase, 'dir=s' => \$directory );
+
+die "Knowledgebase not defined (--kb <file>)" unless $knowledgebase;
+die "Knowledgebase is not a file" unless -f $knowledgebase;
+die "Knowledgebase is not readable" unless -r $knowledgebase;
+
+die "Mail directory not defined (--dir <dir>)" unless $directory;
+die "Mail directory is not a directory" unless -d $directory;
+die "Mail directory is not readable" unless -r $directory;
+
+my $s = AI::ExpertSystem::Simple::CheckEmail->new($knowledgebase);
+
+opendir(DIR, $directory) or die "Unable to read $directory: $!";
+my @files = readdir(DIR);
+closedir(DIR);
+
+foreach my $filename (@files) {
+	next if $filename =~ m/^\./;
+
+	my $response = $s->process("$directory/$filename");
+
+	print "$filename\t$response\n";
+}

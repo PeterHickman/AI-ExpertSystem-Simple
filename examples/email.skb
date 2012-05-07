@@ -1,0 +1,114 @@
+# A simple knowledgebase to classify email from the headers
+
+goal classify
+	classify
+
+rule Tesco
+	conditions
+		header_tesco is yes
+	actions
+		classify is tesco
+
+rule Ebay
+	conditions
+		header_ebay is yes
+	actions
+		classify is ebay
+
+rule Paypal
+	condition
+		header_paypal is yes
+	action
+		classify is paypal
+
+rule Index
+	condition
+		header_index is yes
+	action
+		classify is index
+
+rule Self
+	condition
+		header_self is yes
+	action
+		classify is self
+
+rule Littlewoods
+	condition
+		header_littlewoods is yes
+	action
+		classify is littlewoods
+
+rule Amazon
+	condition
+		header_amazon is yes
+	action
+		classify is amazon
+
+rule Spam1
+	condition
+		body_spam is yes
+	action
+		classify is spam
+
+rule Spam2
+	condition
+		header_spam is yes
+	action
+		classify is spam
+
+rule MVC
+	condition
+		header_mvc is yes
+	action
+		classify is mvc
+
+question header_mvc
+	header from 1 @mvc.co.uk
+	yes
+	no
+
+question header_tesco
+	header from 1 @tesco.co.uk
+	yes
+	no
+
+question header_ebay
+	header from 1 @ebay.com @ebay.co.uk
+	yes
+	no
+
+question header_paypal
+	header from 1 @paypal.com
+	yes
+	no
+
+question header_index
+	header from 1 @littlewoods-index.com @littlewoodsindex.com
+	yes
+	no
+
+question header_self
+	header from 1 peterhi@shake.demon.co.uk peterhi@ntlworld.com peter@semantico.com
+	yes
+	no
+
+question header_littlewoods
+	header from 1 @littlewoodsindex.com @littlewoods-index.com
+	yes
+	no
+
+question header_amazon
+	header from 1 @amazon.co.uk
+	yes
+	no
+
+question header_spam
+	header subject 1 peterhi viagra
+	yes
+	no
+
+question body_spam
+	body 1 penis generic cialis viagra
+	yes
+	no

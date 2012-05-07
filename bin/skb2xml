@@ -1,0 +1,284 @@
+#!/usr/bin/perl -w
+
+################################################################################
+# Program : skb2xml
+# 
+# Description
+# -----------
+# Converts a simplified knowledgebase format into the XML format that I 
+# foolishly used. The simple format is very python like, goal, rule and
+# question must start a line. The associated data must be indented, any
+# amount will do, and must be followed by a blank line.
+# 
+# goal classify
+# 	The mail is classified as classify
+# 
+# rule Tesco
+# 	conditions
+# 		header_tesco is yes
+# 	actions
+# 		classify is tesco
+# 
+# rule Ebay
+# 	conditions
+# 		header_ebay is yes
+# 	actions
+# 		classify is ebay
+# 
+# rule Paypal
+# 	condition
+# 		header_paypal is yes
+# 	action
+# 		classify is paypal
+# 
+# question header_tesco
+# 	header:from tesco.com
+# 	yes
+# 	no
+# 
+# question header_ebay
+# 	header:from ebay.com
+# 	yes
+# 	no
+# 
+# question header_palpay
+# 	header:from palpay.com
+# 	yes
+# 	no
+#
+# This program will take the skb format above and write out the required xml
+# so that it can be fed into the expert system. You can use # and ; for 
+# comments.
+#
+# Error checking is sparse but there is a VIM syntax file!
+################################################################################
+
+use strict;
+use warnings;
+
+################################################################################
+# Various global variables
+################################################################################
+
+my $goalvar  = '';
+my $goaltext = '';
+
+my $questionvar       = '';
+my $questiontext      = '';
+my @questionresponses = ();
+my %questionnames;
+
+my $rulename   = '';
+my @conditions = ();
+my @actions    = ();
+my %rulenames;
+
+my $mode    = '';
+my $counter = 0;
+
+my $goalxml     = '';
+my $rulexml     = '';
+my $questionxml = '';
+
+################################################################################
+# Process the data from the command line
+################################################################################
+
+while ( my $line = <> ) {
+    chomp($line);
+
+	# Remove the comments
+
+	$line =~ s/[#;].*//g;
+
+    # The goal related parsing
+
+    if ( $line =~ m/^goal\s+(.+)/i ) {
+        die "Already processing $mode" if $mode;
+
+        $mode    = 'goal';
+        $goalvar = $1;
+    }
+    elsif ( $mode eq 'goal' and $line =~ m/^\s+(.+)/ ) {
+        $goaltext .= "$1 ";
+    }
+
+    # The rule related parsing
+
+    elsif ( $line =~ m/^rule\s+(.+)/i ) {
+        die "Already processing $mode" if $mode;
+
+        $mode     = 'rule';
+        $rulename = $1;
+        $counter  = 0;
+
+		die "Rule $rulename already defined" if $rulenames{$rulename};
+		$rulenames{$rulename} = 1;
+    }
+    elsif ( $mode eq 'rule' and $counter == 0 and $line =~ m/\s+conditions?$/i ) {
+        $counter = 1;
+    }
+    elsif ( $mode eq 'rule' and $counter == 1 and $line =~ m/\s+actions?$/i ) {
+        $counter = 2;
+    }
+    elsif ( $mode eq 'rule' and $counter == 1 and $line =~ m/\s+(.+)\sis\s(.+)$/i ) {
+        push ( @conditions, $1, $2 );
+    }
+    elsif ( $mode eq 'rule' and $counter == 2 and $line =~ m/\s+(.+)\sis\s(.+)$/i ) {
+        push ( @actions, $1, $2 );
+    }
+
+    # The question related parsing
+
+    elsif ( $line =~ m/^question\s+(.+)/i ) {
+        die "Already processing $mode" if $mode;
+
+        $mode        = 'question';
+        $questionvar = $1;
+        $counter     = 0;
+
+		die "Question for $questionvar already defined" if $questionnames{$questionvar};
+		$questionnames{$questionvar} = 1;
+    }
+    elsif ( $mode eq 'question' and $counter == 0 and $line =~ m/^\s+(.+)/ ) {
+        $questiontext = $1;
+        $counter++;
+    }
+    elsif ( $mode eq 'question' and $counter > 0 and $line =~ m/^\s+(.+)/ ) {
+        push ( @questionresponses, $1 );
+        $counter++;
+    }
+
+    # What to do with a blank line
+
+    elsif ( $line =~ m/^\s*$/ ) {
+        if    ( $mode eq 'goal' )     { xml_goal(); }
+        elsif ( $mode eq 'rule' )     { xml_rule(); }
+        elsif ( $mode eq 'question' ) { xml_question(); }
+        elsif ( $mode eq '' )         { }
+        else { print "Oops\n"; }
+
+        $mode    = '';
+        $counter = 0;
+    }
+}
+if    ( $mode eq 'goal' )     { xml_goal(); }
+elsif ( $mode eq 'rule' )     { xml_rule(); }
+elsif ( $mode eq 'question' ) { xml_question(); }
+elsif ( $mode eq '' )         { }
+else { print "Oops\n"; }
+
+write_xml();
+
+################################################################################
+# Write out the whole knowledge base
+################################################################################
+
+sub write_xml {
+    die "The goal has not been defined"       unless $goalxml;
+    die "The rules have not been defined"     unless $rulexml;
+    die "The questions have not been defined" unless $questionxml;
+
+    print "<?xml version=\"1.0\" ?>\n";
+    print "<knowlegdebase>\n";
+    print $goalxml;
+    print "  <rules>\n";
+    print $rulexml;
+    print "  </rules>\n";
+    print "  <questions>\n";
+    print $questionxml;
+    print "  </questions>\n";
+    print "</knowlegdebase>\n";
+}
+
+################################################################################
+# Construct the xml for the goal
+################################################################################
+
+sub xml_goal {
+    die "Goal variable is undefined" unless $goalvar;
+    die "Goal text is undefined"     unless $goaltext;
+
+	$goaltext =~ s/[ \t]+/ /g;
+	$goaltext =~ s/ $//g;
+    my $text = '';
+
+    $text .= "  <goal>\n";
+    $text .= "    <attribute>$goalvar</attribute>\n";
+    $text .= "    <text>$goaltext</text>\n";
+    $text .= "  </goal>\n";
+
+    $goalvar  = '';
+    $goaltext = '';
+
+    $goalxml = $text;
+}
+
+################################################################################
+# Construct the xml for the question
+################################################################################
+
+sub xml_question {
+    die "Question variable is undefined"   unless $questionvar;
+    die "Question text is undefined"       unless $questiontext;
+    die "Question responses are undefined" unless @questionresponses;
+
+    my $text = '';
+
+    $text .= "    <question>\n";
+    $text .= "      <attribute>$questionvar</attribute>\n";
+    $text .= "      <text>$questiontext</text>\n";
+    foreach my $response (@questionresponses) {
+        $text .= "      <response>$response</response>\n";
+    }
+    $text .= "    </question>\n";
+
+    $questionvar       = '';
+    $questiontext      = '';
+    @questionresponses = ();
+
+    $questionxml .= $text;
+}
+
+################################################################################
+# Construct the xml for the rule
+################################################################################
+
+sub xml_rule {
+    die "Rule name is undefined"            unless $rulename;
+    die "Question conditions are undefined" unless @conditions;
+    die "Question actions are undefined"    unless @actions;
+
+    my $text = '';
+
+    $text .= "    <rule>\n";
+    $text .= "      <name>$rulename</name>\n";
+
+    $text .= "      <conditions>\n";
+    while (@conditions) {
+        my $key   = shift @conditions;
+        my $value = shift @conditions;
+
+        $text .= "        <condition>\n";
+        $text .= "          <attribute>$key</attribute>\n";
+        $text .= "          <value>$value</value>\n";
+        $text .= "        </condition>\n";
+    }
+    $text .= "      </conditions>\n";
+
+    $text .= "      <actions>\n";
+    while (@actions) {
+        my $key   = shift @actions;
+        my $value = shift @actions;
+
+        $text .= "        <action>\n";
+        $text .= "          <attribute>$key</attribute>\n";
+        $text .= "          <value>$value</value>\n";
+        $text .= "        </action>\n";
+    }
+    $text .= "      </actions>\n";
+
+    $text .= "    </rule>\n";
+
+    $rulexml .= $text;
+}

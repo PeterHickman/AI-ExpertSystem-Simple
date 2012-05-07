@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE knowledgebase SYSTEM "sie-1.0.dtd">
+<knowledgebase>
+ <goal>
+  <attribute>ripeness</attribute>
+  <text>ripeness</text>
+ </goal>
+ <rules>
+  <rule>
+   <name>Ripe banana</name>
+   <conditions>
+    <condition><attribute>type</attribute><value>banana</value></condition>
+    <condition><attribute>colour</attribute><value>yellow</value></condition>
+   </conditions>
+   <actions>
+    <action>
+     <attribute>ripeness</attribute><value>the banana is ripe</value>
+    </action>
+   </actions>
+  </rule>
+  <rule>
+   <name>Spoilt banana</name>
+   <conditions>
+    <condition><attribute>type</attribute><value>banana</value></condition>
+    <condition><attribute>colour</attribute><value>brown</value></condition>
+   </conditions>
+   <actions>
+    <action>
+     <attribute>ripeness</attribute><value>your banana has gone off</value>
+    </action>
+   </actions>
+  </rule>
+  <rule>
+   <name>Too soon banana</name>
+   <conditions>
+    <condition><attribute>type</attribute><value>banana</value></condition>
+    <condition><attribute>colour</attribute><value>green</value></condition>
+   </conditions>
+   <actions>
+    <action>
+     <attribute>ripeness</attribute><value>your banana is not ripe yet, hold on</value>
+    </action>
+   </actions>
+  </rule>
+  <rule>
+   <name>Ripe potato</name>
+   <conditions>
+    <condition><attribute>type</attribute><value>potato</value></condition>
+    <condition><attribute>colour</attribute><value>brown</value></condition>
+   </conditions>
+   <actions>
+    <action>
+	<attribute>ripeness</attribute><value>your potato is good</value>
+    </action>
+   </actions>
+  </rule>
+  <rule>
+   <name>Too soon potato</name>
+   <conditions>
+    <condition><attribute>type</attribute><value>potato</value></condition>
+    <condition><attribute>colour</attribute><value>green</value></condition>
+   </conditions>
+   <actions>
+    <action>
+	<attribute>ripeness</attribute><value>your potato not yet ready</value>
+    </action>
+   </actions>
+  </rule>
+ </rules>
+ <questions>
+  <question>
+   <attribute>type</attribute>
+   <text>What type is the produce</text>
+   <response>potato</response>
+   <response>banana</response>
+  </question>
+  <question>
+   <attribute>colour</attribute>
+   <text>What colour is the produce</text>
+   <response>brown</response>
+   <response>yellow</response>
+   <response>green</response>
+  </question>
+ </questions>
+</knowledgebase>

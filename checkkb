@@ -1,0 +1,118 @@
+#!/usr/bin/perl
+
+################################################################################
+# Program : checkkb - Check the knowledgebase and test run it
+#
+# Description
+# -----------
+# This program is part of the AI::ExpertSystem::Simple package that implements
+# an expert system as a Perl class. This tool performs some checking on a
+# knowldgebase and then runs through all possible questions and responses.
+#
+# A series of reports are produced as html files, linked off an index.html
+#
+# Version : 1.00
+# Dated   : 27th October 2003
+# Author  : Peter Hickman <peterhi@ntlworld.com>
+#
+# Initial version
+#
+# To Do
+# -----
+# We could do with better pages
+################################################################################
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use AI::ExpertSystem::Simple::Explore;
+
+my $scripts = 0;
+my $filename;
+
+GetOptions( "scripts!" => \$scripts, "file=s" => \$filename );
+
+usage("No filename specified") unless $filename;
+
+create_the_reports( $filename, $scripts );
+
+################################################################################
+# Create the reports
+################################################################################
+
+sub create_the_reports {
+	my ( $filename, $scripts ) =@_;
+
+    my $x = AI::ExpertSystem::Simple::Explore->new($filename);
+
+    my $html = '<html><head><title>AI::ExpertSystem::Simple::Explore report</title></head><body><h1>AI::ExpertSystem::Simple::Explore report</h1><hr />';
+
+    # These reports do not need the scripts to be run
+    $html .= '<h1>Reports based on the knowledgebase</h1>';
+	$html .= '<ol><li>';
+    $html .= save_report( 'Attributes', 'report_attributes.html', $x->report_attributes() );
+	$html .= '</li></ol>';
+
+    if ($scripts) {
+
+        # These reports require that the scripts are run
+        $html .= '<h1>Reports based on running the scripts</h1>';
+        $x->run_scripts();
+		$html .= '<ol><li>';
+        $html .= save_report( 'Scripts',     'report_scripts.html',     $x->report_scripts() );
+		$html .= '</li><li>';
+        $html .= save_report( 'Good usage',  'report_usage_good.html',  $x->report_usage_good() );
+		$html .= '</li><li>';
+        $html .= save_report( 'Bad usage',   'report_usage_bad.html',   $x->report_usage_bad() );
+		$html .= '</li><li>';
+        $html .= save_report( 'Total usage', 'report_usage_total.html', $x->report_usage_total() );
+		$html .= '</li><li>';
+        $html .= save_report( 'Answers',     'report_answers.html',     $x->report_answers() );
+		$html .= '</li><li>';
+        $html .= save_report( 'Tree',        'report_tree.html',        $x->report_tree() );
+		$html .= '</li></ol>';
+    }
+
+    $html .= '</body></html>';
+
+    save_report( 'Index', 'index.html', $html );
+}
+
+################################################################################
+# Wrap the contents of a report into a file and save it
+################################################################################
+
+sub save_report {
+    my ( $title, $filename, $report ) = @_;
+
+	print "Creating report: $title -> $filename\n";
+
+    open( FILE, ">$filename" ) or die "Unable to open $filename: $!";
+    print FILE '<html><head><title>' . $title . '</title></head><body>';
+	print FILE '<h3><a href="index.html">Return to the top page</a><hr />' unless $filename eq 'index.html';
+    print FILE $report;
+    print FILE '</body></html>';
+    close(FILE);
+
+    return '<a href="' . $filename . '">' . $title . '</a><br />';
+}
+
+################################################################################
+# Display the programs usage
+################################################################################
+
+sub usage {
+    my ($error) = @_;
+
+    print "Error: $error\n" if $error;
+
+    print <<EOL;
+Usage: $0 -file <filename> [-scripts]
+	<filename> is the knowledgebase
+	-[no]scripts, optionaly, runs the scripts over the knowledgebase
+EOL
+
+    exit(1);
+}
+
